@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Busca de variedades</title>
+<style>
+  :root { --bg:#ffffff; --fg:#111111; --muted:#666666; box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:light; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#161616; --fg:#eeeeee; --muted:#999999; color-scheme:dark; } }
+  :root[data-theme="dark"] { --bg:#161616; --fg:#eeeeee; --muted:#999999; color-scheme:dark; }
+  html { scroll-padding-top:env(safe-area-inset-top,0px); }
+  body { background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; margin:0; padding:16px; }
+  #busca { width:100%; box-sizing:border-box; font-size:18px; padding:10px; background:var(--bg); color:var(--fg); border:1px solid var(--muted); }
+  #resultado { margin-top:20px; }
+  h3 { margin:16px 0 6px; }
+  ul { margin:0; padding-left:20px; }
+  .vazio { color:var(--muted); }
+</style>
+</head>
+<body>
+<input id="busca" type="text" placeholder="Digite: batata, tomate, cebola..." autocomplete="off" autofocus>
+<div id="resultado"></div>
+
+<script>
+const dados = {
+  "Batata": ["Asterix","Agata","Atlantic","Bintje","Monalisa","Markies","Ágata Rosa","Baraka","Cupido","Innovator","Russet Burbank","Yukon Gold","Fingerling","Batata-roxa (Vitelotte)","Red Pontiac","Desirée","King Edward","Maris Piper","Charlotte","Ratte","Batata-doce","Batata-baroa (mandioquinha)","Batata-yacon"],
+  "Tomate": ["Italiano (Roma)","San Marzano","Cereja","Uva","Coração-de-boi","Carmem","Débora","Santa Cruz","Sweet Grape","Caqui","Heirloom","Cherokee Purple","Brandywine","Beefsteak","Amarelo","Verde (Green Zebra)","Kumato","Tomate-andino","Mini-San Marzano","Pera"],
+  "Cebola": ["Amarela","Roxa","Branca","Pérola","Doce (Vidalia)","Cebolinha","Chalota (echalota)","Cebola-de-cabeça","Cebolete","Alho-poró"],
+  "Cenoura": ["Nantes","Brasília","Kuroda","Danvers","Chantenay","Imperator","Baby carrot","Roxa","Amarela","Branca","Vermelha"],
+  "Alface": ["Crespa","Lisa","Americana","Roxa","Romana","Mimosa","Frisée","Lollo Rosso","Lollo Bionda","Baby leaf","Rúcula","Radicchio","Escarola"],
+  "Banana": ["Prata","Nanica","Maçã","Terra","Ouro","Da-terra (plátano)","Figo","Cavendish","Gros Michel","Red banana (roxa)","Pacovan"],
+  "Maçã": ["Gala","Fuji","Granny Smith","Golden Delicious","Red Delicious","Pink Lady","Braeburn","Honeycrisp","McIntosh","Cripps Pink","Eva","Maxi Gala","Belmont"],
+  "Uva": ["Itália","Niágara","Thompson (sem semente)","Crimson","Red Globe","Isabel","Concord","Syrah","Cabernet Sauvignon","Merlot","Malbec","Chardonnay","Sauvignon Blanc","Pinot Noir","Tannat","Moscato"],
+  "Laranja": ["Pera","Bahia","Lima","Natal","Valência","Seleta","Hamlin","Sanguínea","Baía","Navel","Tangerina (mexerica)","Ponkan","Murcote","Clementina"],
+  "Manga": ["Palmer","Tommy Atkins","Haden","Keitt","Kent","Espada","Rosa","Ubá","Bourbon","Coquinho","Carlota","Van Dyke","Ataulfo"],
+  "Pimenta": ["Malagueta","Dedo-de-moça","Biquinho","Cumari","Habanero","Jalapeño","Carolina Reaper","Bhut Jolokia","Cayenne","Tabasco","Calabresa","Pimentão-verde","Pimentão-vermelho","Pimentão-amarelo","Pimenta-do-reino","Chipotle","Bode"],
+  "Feijão": ["Carioca","Preto","Branco","Fradinho","Vermelho","Jalo","Roxinho","Rajado","Manteiga","Azuki","Feijão-de-corda","Feijão-verde","Mungo"],
+  "Arroz": ["Branco","Integral","Parboilizado","Arbório","Agulhinha","Cateto","Basmati","Jasmim","Negro","Vermelho","Selvagem","Carnaroli","Vialone Nano","Sushi (japonês)"],
+  "Milho": ["Doce","Pipoca","Verde","Dentado","Duro (flint)","Mole","Ceroso","Roxo","Branco","Amarelo","Canjica (milho branco)"],
+  "Abóbora": ["Moranga","Cabotiá (Kabocha)","Jerimum","Paulista","Menina brasileira","Butternut","Pescoço","Hokkaido","Spaghetti","Delicata","Pumpkin (halloween)","Italiana (abobrinha)"],
+  "Mandioca": ["Aipim","Macaxeira","Mandioca-brava","Mandioca-mansa","Amarela","Branca","Cacau","Vassourinha","Fécula/polvilho"],
+  "Alho": ["Roxo","Branco","Chinês","Nobre","Gigante (Elefante)","Alho-poró","Alho-negro","Alho-selvagem"],
+  "Morango": ["Albion","Camarosa","Oso Grande","San Andreas","Monterey","Aromas","Festival","Dover","Camino Real","Silvestre","Branco (Pineberry)"],
+  "Limão": ["Taiti","Siciliano","Galego","Cravo","Rosa","Eureka","Meyer","Kaffir","Capeta","Lima-da-pérsia"],
+  "Abacate": ["Hass","Fuerte","Breda","Margarida","Quintal","Geada","Fortuna","Princesa","Ouro verde","Bacon"]
+};
+
+function norm(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim(); }
+
+function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function buscar(){
+  const q = norm(document.getElementById("busca").value);
+  const out = document.getElementById("resultado");
+  if(!q){ out.innerHTML = ""; return; }
+  let html = "";
+  let achou = false;
+  for(const cat in dados){
+    const c = norm(cat);
+    if(c.includes(q) || q.includes(c)){
+      html += "<h3>" + esc(cat) + " (" + dados[cat].length + " tipos)</h3><ul>" +
+        dados[cat].map(v => "<li>" + esc(v) + "</li>").join("") + "</ul>";
+      achou = true;
+    } else {
+      const m = dados[cat].filter(v => norm(v).includes(q));
+      if(m.length){
+        html += "<h3>" + esc(cat) + " — correspondências</h3><ul>" +
+          m.map(v => "<li>" + esc(v) + "</li>").join("") + "</ul>";
+        achou = true;
+      }
+    }
+  }
+  out.innerHTML = achou ? html : '<p class="vazio">Nada encontrado para "' + esc(q) + '".</p>';
+}
+
+document.getElementById("busca").addEventListener("input", buscar);
+</script>
+</body>
+</html>
